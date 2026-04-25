@@ -1,0 +1,981 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Stock Monitor — Fawara</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet"/>
+<style>
+:root {
+  --bg: #0a0a0f;
+  --surface: #111118;
+  --surface2: #18181f;
+  --border: rgba(255,255,255,0.07);
+  --border-hover: rgba(255,255,255,0.14);
+  --text: #f0ede8;
+  --muted: #6b6880;
+  --accent: #c8f04a;
+  --accent-dim: rgba(200,240,74,0.1);
+  --accent-dim2: rgba(200,240,74,0.06);
+  --green: #3de88e;
+  --green-dim: rgba(61,232,142,0.1);
+  --red: #ff5757;
+  --red-dim: rgba(255,87,87,0.1);
+  --amber: #ffb547;
+  --amber-dim: rgba(255,181,71,0.1);
+  --wa: #25D366;
+  --wa-dim: rgba(37,211,102,0.1);
+  --font: 'Syne', sans-serif;
+  --mono: 'DM Mono', monospace;
+  --radius: 12px;
+  --radius-sm: 8px;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Grid background */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(200,240,74,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(200,240,74,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app {
+  position: relative;
+  z-index: 1;
+  max-width: 780px;
+  margin: 0 auto;
+  padding: 48px 24px 80px;
+}
+
+/* ── Header ── */
+.header {
+  margin-bottom: 48px;
+}
+
+.header-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.logo-mark {
+  width: 36px;
+  height: 36px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  flex-shrink: 0;
+}
+
+.logo-text {
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  color: var(--text);
+}
+
+.logo-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--muted);
+  font-family: var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-top: 2px;
+}
+
+.ext-pill {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--muted);
+  cursor: default;
+  transition: border-color 0.2s;
+}
+
+.ext-pill.connected { border-color: rgba(61,232,142,0.3); color: var(--green); }
+.ext-pill.error { border-color: rgba(255,87,87,0.3); color: var(--red); }
+
+.status-dot {
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--muted);
+  flex-shrink: 0;
+}
+.ext-pill.connected .status-dot { background: var(--green); box-shadow: 0 0 8px var(--green); animation: pulse 2s ease-in-out infinite; }
+.ext-pill.error .status-dot { background: var(--red); }
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+/* ── Sections ── */
+.section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 16px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+.section:hover { border-color: var(--border-hover); }
+
+.section-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.section-header:hover { background: rgba(255,255,255,0.02); }
+
+.section-icon {
+  width: 32px; height: 32px;
+  border-radius: 8px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px;
+  flex-shrink: 0;
+}
+.section-icon.blue { background: rgba(100,150,255,0.12); }
+.section-icon.green { background: var(--wa-dim); }
+
+.section-label {
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: -0.2px;
+  flex: 1;
+}
+
+.section-badge {
+  font-size: 11px;
+  font-family: var(--mono);
+  padding: 3px 10px;
+  border-radius: 100px;
+}
+.badge-saved { background: var(--green-dim); color: var(--green); }
+.badge-connected { background: var(--green-dim); color: var(--green); }
+.badge-error { background: var(--red-dim); color: var(--red); }
+
+.chevron {
+  color: var(--muted);
+  font-size: 12px;
+  transition: transform 0.2s;
+}
+.chevron.open { transform: rotate(90deg); }
+
+.section-body {
+  overflow: hidden;
+  transition: max-height 0.3s cubic-bezier(0.4,0,0.2,1);
+}
+
+.section-body-inner {
+  padding: 0 20px 20px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Form Elements ── */
+.field {
+  margin-bottom: 14px;
+}
+
+.field label {
+  display: block;
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 6px;
+  margin-top: 16px;
+}
+
+.field input {
+  width: 100%;
+  height: 40px;
+  padding: 0 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  outline: none;
+}
+.field input:focus {
+  border-color: rgba(200,240,74,0.4);
+  box-shadow: 0 0 0 3px rgba(200,240,74,0.08);
+}
+.field input::placeholder { color: var(--muted); }
+
+.grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.hint {
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--muted);
+  margin-top: 10px;
+  line-height: 1.6;
+}
+
+.btn-row { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+
+button {
+  height: 38px;
+  padding: 0 18px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border);
+  background: transparent;
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s;
+  white-space: nowrap;
+}
+button:hover { background: rgba(255,255,255,0.05); border-color: var(--border-hover); }
+button:active { transform: scale(0.97); }
+
+.btn-accent {
+  background: var(--accent);
+  color: #0a0a0f;
+  border-color: var(--accent);
+  font-weight: 700;
+}
+.btn-accent:hover { background: #d4f55a; border-color: #d4f55a; }
+
+.btn-wa {
+  background: var(--wa);
+  color: #fff;
+  border-color: var(--wa);
+  font-weight: 600;
+}
+.btn-wa:hover { background: #1ebe5d; border-color: #1ebe5d; }
+
+/* ── Add Product ── */
+.add-section {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 20px;
+  margin-bottom: 24px;
+}
+
+.add-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.add-row input {
+  flex: 1;
+  min-width: 160px;
+  height: 44px;
+  padding: 0 14px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+.add-row input:focus {
+  border-color: rgba(200,240,74,0.4);
+  box-shadow: 0 0 0 3px rgba(200,240,74,0.08);
+}
+.add-row input::placeholder { color: var(--muted); }
+
+.add-row .btn-accent { height: 44px; padding: 0 24px; font-size: 14px; }
+
+.add-bottom {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.interval-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+select {
+  height: 30px;
+  padding: 0 10px;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 12px;
+  cursor: pointer;
+  outline: none;
+}
+
+.sites-hint {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+/* ── Products list ── */
+.products-label {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 12px;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 60px 24px;
+  color: var(--muted);
+  font-size: 14px;
+  font-family: var(--mono);
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+}
+
+.empty-state .empty-icon { font-size: 32px; margin-bottom: 12px; }
+
+/* ── Product Card ── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  margin-bottom: 12px;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.15s;
+  position: relative;
+}
+.card:hover { border-color: var(--border-hover); }
+
+.card-accent {
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+}
+.card.in-stock .card-accent { background: var(--green); }
+.card.out-stock .card-accent { background: var(--red); }
+.card.checking .card-accent { background: var(--amber); }
+.card.idle .card-accent { background: var(--border); }
+
+.card-main {
+  padding: 16px 18px 16px 22px;
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.card-info { flex: 1; min-width: 0; }
+
+.card-name {
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 3px;
+}
+
+.card-url {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.card-url a { color: inherit; text-decoration: none; }
+.card-url a:hover { color: var(--accent); }
+
+.card-badge {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-family: var(--mono);
+  font-weight: 500;
+  padding: 5px 12px;
+  border-radius: 100px;
+}
+.card-badge.in-stock { background: var(--green-dim); color: var(--green); }
+.card-badge.out-stock { background: var(--red-dim); color: var(--red); }
+.card-badge.checking { background: var(--amber-dim); color: var(--amber); }
+.card-badge.idle { background: var(--surface2); color: var(--muted); }
+
+.card-footer {
+  padding: 10px 18px 12px 22px;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.card-meta {
+  font-size: 11px;
+  font-family: var(--mono);
+  color: var(--muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.card-meta strong { color: rgba(240,237,232,0.6); font-weight: 400; }
+
+.card-actions { display: flex; gap: 6px; }
+
+.btn-sm {
+  height: 28px;
+  padding: 0 12px;
+  font-size: 11px;
+  font-family: var(--mono);
+}
+
+.btn-remove { border-color: rgba(255,87,87,0.3); color: var(--red); }
+.btn-remove:hover { background: var(--red-dim); }
+
+/* Progress bar */
+.card-progress {
+  padding: 0 18px 12px 22px;
+}
+
+.progress-track {
+  height: 2px;
+  background: var(--surface2);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 5px;
+}
+.progress-fill {
+  height: 100%;
+  background: var(--amber);
+  border-radius: 2px;
+  transition: width 1s linear;
+}
+
+.countdown-text {
+  font-size: 10px;
+  font-family: var(--mono);
+  color: var(--muted);
+}
+
+/* Method tag */
+.method-tag {
+  font-size: 10px;
+  font-family: var(--mono);
+  padding: 2px 7px;
+  border-radius: 4px;
+  background: var(--accent-dim2);
+  color: var(--accent);
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ── Notifications ── */
+#notifications { position: fixed; top: 20px; right: 20px; z-index: 100; display: flex; flex-direction: column; gap: 8px; max-width: 360px; }
+
+.notif {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: var(--radius-sm);
+  font-size: 13px;
+  font-family: var(--mono);
+  border: 1px solid;
+  animation: slideIn 0.25s ease;
+  backdrop-filter: blur(12px);
+}
+@keyframes slideIn { from { opacity:0; transform:translateX(20px); } to { opacity:1; transform:none; } }
+
+.notif.success { background: rgba(61,232,142,0.12); border-color: rgba(61,232,142,0.25); color: var(--green); }
+.notif.error { background: rgba(255,87,87,0.12); border-color: rgba(255,87,87,0.25); color: var(--red); }
+.notif.info { background: rgba(255,255,255,0.05); border-color: var(--border); color: var(--muted); }
+
+.notif-close { margin-left: auto; cursor: pointer; background: none; border: none; color: inherit; font-size: 14px; height: auto; padding: 0; line-height: 1; opacity: 0.6; }
+.notif-close:hover { opacity: 1; transform: none; }
+
+/* ── Spinner ── */
+.spinner {
+  display: inline-block;
+  width: 9px; height: 9px;
+  border: 1.5px solid currentColor;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--surface2); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="notifications"></div>
+
+<div class="app">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="header-top">
+      <div class="logo">
+        <div class="logo-mark">📦</div>
+        <div>
+          <div class="logo-text">Stock Monitor</div>
+          <div class="logo-sub">by Fawara</div>
+        </div>
+      </div>
+      <div class="ext-pill" id="extPill">
+        <span class="status-dot"></span>
+        <span id="extPillText">Extension not connected</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Extension Setup -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('extBody','extChevron','extBadge')">
+      <div class="section-icon blue">🔌</div>
+      <div class="section-label">Fawara Extension</div>
+      <span id="extBadge" class="section-badge" style="display:none"></span>
+      <span class="chevron open" id="extChevron">&#9654;</span>
+    </div>
+    <div class="section-body" id="extBody" style="max-height:400px">
+      <div class="section-body-inner">
+        <div class="field">
+          <label>Extension ID</label>
+          <input type="text" id="extIdInput" placeholder="e.g. abcdefghijklmnopqrstuvwxyzabcdef" />
+        </div>
+        <p class="hint">Install <strong>fawara-extension-combined.zip</strong> in Chrome → open the Fawara popup → copy the Extension ID shown there → paste above.</p>
+        <div class="btn-row">
+          <button class="btn-accent" onclick="connectExtension()">Connect</button>
+          <button onclick="pingExtension()">Test ping</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WhatsApp Setup -->
+  <div class="section">
+    <div class="section-header" onclick="toggleSection('waBody','waChevron','waBadge')">
+      <div class="section-icon green">💬</div>
+      <div class="section-label">WhatsApp Alerts</div>
+      <span id="waBadge" class="section-badge" style="display:none"></span>
+      <span class="chevron" id="waChevron">&#9654;</span>
+    </div>
+    <div class="section-body" id="waBody" style="max-height:0">
+      <div class="section-body-inner">
+        <div class="grid2">
+          <div class="field">
+            <label>Phone Number ID</label>
+            <input type="text" id="waPhoneId" placeholder="123456789012345" />
+          </div>
+          <div class="field">
+            <label>Recipient Number</label>
+            <input type="text" id="waRecipient" placeholder="+8801XXXXXXXXX" />
+          </div>
+        </div>
+        <div class="field">
+          <label>Access Token</label>
+          <input type="password" id="waToken" placeholder="EAAxxxxxxxx..." />
+        </div>
+        <p class="hint">Get these from developers.facebook.com → Your App → WhatsApp → API Setup</p>
+        <div class="btn-row">
+          <button class="btn-wa" onclick="saveWa()">Save credentials</button>
+          <button onclick="testWa()">Send test message</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Product -->
+  <div class="add-section">
+    <div class="add-row">
+      <input type="text" id="nameInput" placeholder="Product name (optional)" style="max-width:200px" />
+      <input type="url" id="urlInput" placeholder="https://limelight.pk/products/..." />
+      <button class="btn-accent" onclick="addProduct()">+ Track</button>
+    </div>
+    <div class="add-bottom">
+      <div class="interval-group">
+        <span>Check every</span>
+        <select id="intervalSelect">
+          <option value="5">5 min</option>
+          <option value="15" selected>15 min</option>
+          <option value="30">30 min</option>
+          <option value="60">1 hour</option>
+        </select>
+      </div>
+      <span class="sites-hint">limelight · sapphire · khaadi · baroque · jazmin + more</span>
+    </div>
+  </div>
+
+  <!-- Products -->
+  <div id="productList"></div>
+
+</div>
+
+<script>
+const products = [];
+let extId = "";
+let waConfig = { phoneId:"", token:"", recipient:"" };
+let notifId = 0;
+
+// ── Panels ──────────────────────────────────────────────────────────────────
+function toggleSection(bodyId, chevronId, badgeId) {
+  const body = document.getElementById(bodyId);
+  const chev = document.getElementById(chevronId);
+  const isOpen = body.style.maxHeight !== "0px";
+  body.style.maxHeight = isOpen ? "0px" : "600px";
+  chev.classList.toggle("open", !isOpen);
+}
+
+// ── Extension ────────────────────────────────────────────────────────────────
+function connectExtension() {
+  const val = document.getElementById("extIdInput").value.trim();
+  if (!val || val.length < 20) { showNotif("Paste a valid Extension ID.", "error"); return; }
+  extId = val;
+  pingExtension();
+}
+
+function pingExtension() {
+  if (!extId) { showNotif("Enter and connect your Extension ID first.", "error"); return; }
+  const pill = document.getElementById("extPill");
+  const pillText = document.getElementById("extPillText");
+  pillText.textContent = "Pinging...";
+  pill.className = "ext-pill";
+  try {
+    chrome.runtime.sendMessage(extId, { type:"FAWARA_PING" }, (resp) => {
+      const badge = document.getElementById("extBadge");
+      if (chrome.runtime.lastError || !resp?.ok) {
+        pill.className = "ext-pill error";
+        pillText.textContent = "Not found";
+        badge.textContent = "Error";
+        badge.className = "section-badge badge-error";
+        badge.style.display = "inline";
+        showNotif("Could not reach extension. Check ID or reload extension.", "error");
+      } else {
+        pill.className = "ext-pill connected";
+        pillText.textContent = "Connected v" + (resp.version||"?");
+        badge.textContent = "Connected";
+        badge.className = "section-badge badge-connected";
+        badge.style.display = "inline";
+        showNotif("Extension connected! Accurate stock reading enabled.", "success");
+        toggleSection("extBody","extChevron","extBadge");
+      }
+    });
+  } catch(e) {
+    document.getElementById("extPill").className = "ext-pill error";
+    document.getElementById("extPillText").textContent = "Error";
+    showNotif("chrome.runtime not available. Open this file in Chrome.", "error");
+  }
+}
+
+async function checkViaExtension(url) {
+  return new Promise((resolve, reject) => {
+    if (!extId) { reject(new Error("Extension not connected")); return; }
+    try {
+      chrome.runtime.sendMessage(extId, { type:"FAWARA_CHECK_STOCK", url }, (resp) => {
+        if (chrome.runtime.lastError) { reject(new Error(chrome.runtime.lastError.message)); return; }
+        if (!resp?.ok) { reject(new Error(resp?.error||"Extension error")); return; }
+        resolve(resp.data);
+      });
+    } catch(e) { reject(e); }
+  });
+}
+
+// ── WhatsApp ─────────────────────────────────────────────────────────────────
+function saveWa() {
+  const phoneId = document.getElementById("waPhoneId").value.trim();
+  const token = document.getElementById("waToken").value.trim();
+  const recipient = document.getElementById("waRecipient").value.trim();
+  if (!phoneId||!token||!recipient) { showNotif("Fill in all three WhatsApp fields.", "error"); return; }
+  waConfig = { phoneId, token, recipient };
+  const badge = document.getElementById("waBadge");
+  badge.textContent = "Saved";
+  badge.className = "section-badge badge-saved";
+  badge.style.display = "inline";
+  showNotif("WhatsApp credentials saved.", "success");
+}
+
+async function testWa() {
+  if (!waConfig.token) { showNotif("Save WhatsApp credentials first.", "error"); return; }
+  showNotif("Sending test message...", "info");
+  const ok = await sendWhatsApp("Stock Monitor is active! You will receive alerts here when tracked products come back in stock. 📦");
+  showNotif(ok ? "Test message sent! Check WhatsApp." : "Send failed — check credentials.", ok ? "success" : "error");
+}
+
+async function sendWhatsApp(msg) {
+  try {
+    const res = await fetch(`https://graph.facebook.com/v18.0/${waConfig.phoneId}/messages`, {
+      method:"POST",
+      headers:{"Authorization":"Bearer "+waConfig.token,"Content-Type":"application/json"},
+      body:JSON.stringify({messaging_product:"whatsapp",to:waConfig.recipient,type:"text",text:{body:msg}})
+    });
+    const d = await res.json();
+    return res.ok && !d.error;
+  } catch { return false; }
+}
+
+// ── Products ─────────────────────────────────────────────────────────────────
+function addProduct() {
+  const name = document.getElementById("nameInput").value.trim();
+  const url = document.getElementById("urlInput").value.trim();
+  if (!url) { showNotif("Please enter a product URL.", "error"); return; }
+  if (!url.startsWith("http")) { showNotif("Enter a valid URL starting with http.", "error"); return; }
+  if (!extId) showNotif("Extension not connected — stock results may be inaccurate.", "info");
+  const interval = parseInt(document.getElementById("intervalSelect").value);
+  const p = {
+    id: Date.now(),
+    name: name || urlToName(url),
+    url, interval,
+    status:"idle",
+    lastChecked:null,
+    lastResult:null,
+    method:null,
+    monitoring:false,
+    countdown:0,
+    timer:null,
+    countdownTimer:null
+  };
+  products.push(p);
+  document.getElementById("nameInput").value = "";
+  document.getElementById("urlInput").value = "";
+  renderList();
+  startMonitor(p.id);
+}
+
+function urlToName(url) {
+  try {
+    const u = new URL(url);
+    const parts = u.pathname.split("/").filter(Boolean);
+    const last = parts[parts.length-1]||u.hostname;
+    return decodeURIComponent(last).replace(/[-_]/g," ").replace(/\.\w+$/,"").slice(0,48);
+  } catch { return url.slice(0,48); }
+}
+
+function removeProduct(id) {
+  const idx = products.findIndex(p=>p.id===id);
+  if (idx!==-1) {
+    clearTimeout(products[idx].timer);
+    clearInterval(products[idx].countdownTimer);
+    products.splice(idx,1);
+  }
+  renderList();
+}
+
+function toggleMonitor(id) {
+  const p = products.find(p=>p.id===id);
+  if (!p) return;
+  if (p.monitoring) {
+    p.monitoring=false; clearTimeout(p.timer); clearInterval(p.countdownTimer); p.status="idle"; p.countdown=0;
+  } else {
+    startMonitor(id);
+  }
+  renderList();
+}
+
+function startMonitor(id) {
+  const p = products.find(p=>p.id===id);
+  if (!p) return;
+  p.monitoring = true;
+  checkProduct(id);
+}
+
+async function checkProduct(id) {
+  const p = products.find(p=>p.id===id);
+  if (!p||!p.monitoring) return;
+  const wasOut = p.status==="out-stock";
+  p.status="checking"; p.countdown=0; p.method=null;
+  renderList();
+  try {
+    let result;
+    if (extId) {
+      result = await checkViaExtension(p.url);
+      p.method = "extension";
+    } else {
+      result = await checkViaClaude(p.url);
+      p.method = "claude";
+    }
+    p.lastChecked = new Date();
+    p.lastResult = result;
+    p.status = result.inStock ? "in-stock" : "out-stock";
+    if (result.inStock && wasOut) onStockFound(p);
+  } catch(e) {
+    p.status = "out-stock";
+    p.lastResult = { inStock:false, reason:e.message||"Check failed" };
+    p.lastChecked = new Date();
+  }
+  scheduleNext(id);
+  renderList();
+}
+
+async function checkViaClaude(url) {
+  const res = await fetch("https://api.anthropic.com/v1/messages", {
+    method:"POST",
+    headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({
+      model:"claude-sonnet-4-20250514",
+      max_tokens:500,
+      system:'Check if a product is in stock. Use web_search to fetch the page. Respond ONLY with JSON: {"inStock":true/false,"reason":"under 12 words","price":"or null"}. No markdown.',
+      tools:[{type:"web_search_20250305",name:"web_search"}],
+      messages:[{role:"user",content:"Is this product in stock? "+url}]
+    })
+  });
+  const d = await res.json();
+  const t = d.content?.find(b=>b.type==="text");
+  if (!t) throw new Error("No response from Claude");
+  return JSON.parse(t.text.replace(/```json|```/g,"").trim());
+}
+
+async function onStockFound(p) {
+  showNotif(`${p.name} is back in stock!`, "success");
+  if (waConfig.token) {
+    const msg = `📦 Stock Alert!\n\n"${p.name}" is back in stock.\n\nVisit: ${p.url}`;
+    const ok = await sendWhatsApp(msg);
+    if (!ok) showNotif("WhatsApp send failed — check credentials.", "error");
+  }
+}
+
+function scheduleNext(id) {
+  const p = products.find(p=>p.id===id);
+  if (!p||!p.monitoring) return;
+  p.countdown = p.interval*60;
+  clearInterval(p.countdownTimer);
+  p.countdownTimer = setInterval(()=>{ p.countdown=Math.max(0,p.countdown-1); updateCountdown(id); }, 1000);
+  p.timer = setTimeout(()=>{ clearInterval(p.countdownTimer); checkProduct(id); }, p.interval*60*1000);
+}
+
+function updateCountdown(id) {
+  const p = products.find(p=>p.id===id);
+  if (!p) return;
+  const cd = document.getElementById("cd-"+id);
+  const bar = document.getElementById("bar-"+id);
+  if (cd) cd.textContent = "next check in "+fmtCd(p.countdown);
+  if (bar) bar.style.width = Math.round((p.countdown/(p.interval*60))*100)+"%";
+}
+
+function fmtCd(sec) { return sec>=60 ? Math.floor(sec/60)+"m "+(sec%60)+"s" : sec+"s"; }
+
+// ── Render ───────────────────────────────────────────────────────────────────
+function renderList() {
+  const c = document.getElementById("productList");
+  if (!products.length) {
+    c.innerHTML = `<div class="empty-state"><div class="empty-icon">🔍</div>No products tracked yet.<br>Add a URL above to get started.</div>`;
+    return;
+  }
+  c.innerHTML = `<div class="products-label">${products.length} product${products.length!==1?"s":""} tracked</div>` + products.map(cardHTML).join("");
+}
+
+function cardHTML(p) {
+  const labels = {"in-stock":"In Stock","out-stock":"Out of Stock","checking":"Checking...","idle":"Not Checked"};
+  const bc = p.status==="in-stock"?"in-stock":p.status==="out-stock"?"out-stock":p.status==="checking"?"checking":"idle";
+  const checked = p.lastChecked ? "checked "+fmtTime(p.lastChecked) : "not yet checked";
+  const reason = p.lastResult?.reason ? " · "+p.lastResult.reason : "";
+  const price = p.lastResult?.price ? " · "+p.lastResult.price : "";
+  const spin = p.status==="checking" ? '<span class="spinner"></span> ' : "";
+  const methodTag = p.method==="extension" ? '<span class="method-tag">extension</span>' : p.method==="claude" ? '<span class="method-tag">claude ai</span>' : "";
+  const monLabel = p.monitoring ? "Pause" : "Resume";
+  const cd = p.monitoring && p.status!=="checking" ? `
+    <div class="card-progress">
+      <div class="progress-track"><div class="progress-fill" id="bar-${p.id}" style="width:100%"></div></div>
+      <div class="countdown-text" id="cd-${p.id}">next check in ${fmtCd(p.countdown)}</div>
+    </div>` : "";
+
+  return `<div class="card ${bc}">
+    <div class="card-accent"></div>
+    <div class="card-main">
+      <div class="card-info">
+        <div class="card-name">${esc(p.name)}${methodTag}</div>
+        <div class="card-url"><a href="${esc(p.url)}" target="_blank">${esc(p.url)}</a></div>
+      </div>
+      <div class="card-badge ${bc}">${spin}${labels[p.status]||"Unknown"}</div>
+    </div>
+    <div class="card-footer">
+      <div class="card-meta"><strong>${checked}</strong>${reason}${price}</div>
+      <div class="card-actions">
+        <button class="btn-sm" onclick="toggleMonitor(${p.id})">${monLabel}</button>
+        <button class="btn-sm" onclick="checkProduct(${p.id})">Check now</button>
+        <button class="btn-sm btn-remove" onclick="removeProduct(${p.id})">Remove</button>
+      </div>
+    </div>
+    ${cd}
+  </div>`;
+}
+
+function fmtTime(d) {
+  const diff = Math.floor((new Date()-d)/1000);
+  if (diff<60) return "just now";
+  if (diff<3600) return Math.floor(diff/60)+"m ago";
+  return d.toLocaleTimeString([],{hour:"2-digit",minute:"2-digit"});
+}
+
+// ── Notifications ─────────────────────────────────────────────────────────────
+function showNotif(msg, type) {
+  const id = ++notifId;
+  const div = document.createElement("div");
+  div.className = "notif "+(type||"info");
+  div.id = "notif-"+id;
+  div.innerHTML = esc(msg)+`<button class="notif-close" onclick="document.getElementById('notif-${id}').remove()">✕</button>`;
+  document.getElementById("notifications").appendChild(div);
+  if (type!=="error") setTimeout(()=>{ const el=document.getElementById("notif-"+id); if(el)el.remove(); }, 5000);
+}
+
+function esc(s) { return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+
+// Init
+renderList();
+</script>
+</body>
+</html>
